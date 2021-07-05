@@ -1,3 +1,11 @@
+# 个人屏蔽 
+*.log.*
+*.npz
+*.pt
+*.gz
+*byte*
+*.csv
+*.json 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
