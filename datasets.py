@@ -1,15 +1,26 @@
 import numpy as np
 import torch
+import pandas as pd
+import gzip
+from torch.utils import data
+
 
 from torchvision import datasets
+from torchvision import transforms
 from torch.utils.data import Dataset
 from PIL import Image
 
+
 # *获取训练、测试集，根据数据集不同分别处理
 def get_dataset(name, data_path):
+    # 将PIL转换为tenso
+    # trans = transforms.ToTensor()
     if name == 'MNIST' :
         raw_tr = datasets.MNIST(data_path, train=True, download=False)
         raw_te = datasets.MNIST(data_path, train=False, download=False)
+    elif name == 'FashionMNIST':
+        raw_tr = datasets.FashionMNIST(data_path, train=True, download=False)
+        raw_te = datasets.FashionMNIST(data_path, train=False, download=False)
     X_tr = raw_tr.data
     Y_tr = raw_tr.targets
     X_te = raw_te.data
