@@ -77,7 +77,28 @@ def main(args):
     T = Timer()
     # * 参数处理部分
     DATA_NAME = args.dataset
-    # todo 不同数据可能要额外计算
+    MODEL_NAME = args.model_name
+    # ~todo 不同数据可能要额外计算\
+    # -计算一个transform的列表
+    transforms_list = {
+        'MNIST':
+        {
+            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+        },
+        'FashionMNIST':
+        {
+            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+        },
+        'SVHN':
+        {
+            [transforms.ToTensor(), transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))]
+        },
+        'CIFAR10':
+        {
+            [transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))]
+        }
+    }
+    """
     transform_pool = {'MNIST':
                         {'transform':transforms.Compose([transforms.ToTensor(), 
                             transforms.Normalize((0.1307,), (0.3081,))])},
@@ -91,13 +112,17 @@ def main(args):
                         {'transform':transforms.Compose([transforms.ToTensor(), 
                             transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))])}                                                        
     }
+    """
+    tmp_transform_list = transforms_list[DATA_NAME]
+    if MODEL_NAME[:3] == 'VGG':
+        tmp_transform_list.append(transforms.Resize(224))
     # 是否使用GPU
     use_cuda = not args.no_cuda and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # *加载数据集，设置dataloader等
     # 数据集相关参数
-    transform = transform_pool[DATA_NAME]['transform']
+    transform = transforms.Compose(tmp_transform_list)
     
     train_kwargs = {'batch_size': args.batch_size}
     test_kwargs = {'batch_size': args.test_batch_size}
@@ -123,7 +148,7 @@ def main(args):
 
     # *模型训练部分
     # 加载、选择模型，设置优化器、处理相关参数
-    net = get_model(args.model_name).to(device)
+    net = get_model(MODEL_NAME).to(device)
     optimizer = optim.Adadelta(net.parameters(), lr=args.lr)
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     n_epoch = args.epochs
