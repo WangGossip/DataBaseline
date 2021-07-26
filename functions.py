@@ -74,8 +74,13 @@ def get_fashion_mnist_labels(labels):  #@save
     return [text_labels[int(i)] for i in labels]
 
 # *数据集内容（图片）可视化
-def show_images(imgs, num_rows, num_cols, titles=None, scale=2):  #@save
+# 参数解析
+# imgs：存放图像数据，传入的内容要resize为 n*h*w，即 图片数量 x 分辨率
+# num_rows, num_cols 代表要展示的布局
+# fig_name 是存储的图片名， titles是对应的图片标签
+def show_images(imgs, num_rows, num_cols, fig_name, titles=None, scale=2):  #@save
     """Plot a list of images."""
+    scale = 16
     figsize = (num_cols * scale, num_rows * scale)
     fig, axes = plt.subplots(num_rows, num_cols, figsize=figsize)
     axes = axes.flatten()
@@ -90,7 +95,7 @@ def show_images(imgs, num_rows, num_cols, titles=None, scale=2):  #@save
         ax.axes.get_yaxis().set_visible(False)
         if titles:
             ax.set_title(titles[i])
-    fig.savefig('test.png')
+    fig.savefig(fig_name)
     return axes
 
 # *绘制动画

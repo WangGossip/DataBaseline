@@ -82,21 +82,13 @@ def main(args):
     # -计算一个transform的列表
     transforms_list = {
         'MNIST':
-        {
-            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-        },
+            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))],
         'FashionMNIST':
-        {
-            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-        },
+            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))],
         'SVHN':
-        {
-            [transforms.ToTensor(), transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))]
-        },
+            [transforms.ToTensor(), transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))],
         'CIFAR10':
-        {
             [transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))]
-        }
     }
     """
     transform_pool = {'MNIST':
@@ -114,6 +106,7 @@ def main(args):
     }
     """
     tmp_transform_list = transforms_list[DATA_NAME]
+    # *VGG网络需要resize为224
     if MODEL_NAME[:3] == 'VGG':
         tmp_transform_list.append(transforms.Resize(224))
     # 是否使用GPU
@@ -129,7 +122,8 @@ def main(args):
     if use_cuda:
         cuda_kwargs = {'num_workers': 1,
                        'pin_memory': True,
-                       'shuffle': True}
+                       'shuffle': True
+                       }
         train_kwargs.update(cuda_kwargs)
         test_kwargs.update(cuda_kwargs)
     
@@ -143,6 +137,12 @@ def main(args):
     train_loader = DataLoader(handler(X_tr, Y_tr, transform=transform), **train_kwargs)
     test_loader = DataLoader(handler(X_te, Y_te, transform=transform), **test_kwargs)
 
+    # ~todo 验证：是否使用resize的影响
+    # 开始测试
+    # X, y, _ = next(iter(train_loader))
+    # show_images(X.reshape(64, 224, 224), 8, 8, 'VGG_show.png',titles=get_fashion_mnist_labels(y));
+    # return
+    # 测试结束
     tmp_t = T.stop()
     print('Read Data time is {} s'.format(tmp_t))
 
