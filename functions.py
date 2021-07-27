@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
+
 # * 这部分函数是涉及CSV文件操作（存储训练结果用
 def csv_test():
     str_file = 'test.csv'
@@ -64,8 +65,10 @@ class Accumulator:  #@save
     def __getitem__(self, idx):
         return self.data[idx]
 
-# *画图相关
+# *画图相关函数
+
 # *获取FashionMNIST 标签
+# 根据y值获取标签
 def get_fashion_mnist_labels(labels):  #@save
     """返回Fashion-MNIST数据集的文本标签。"""
     text_labels = [
@@ -80,7 +83,6 @@ def get_fashion_mnist_labels(labels):  #@save
 # fig_name 是存储的图片名， titles是对应的图片标签
 def show_images(imgs, num_rows, num_cols, fig_name, titles=None, scale=2):  #@save
     """Plot a list of images."""
-    scale = 16
     figsize = (num_cols * scale, num_rows * scale)
     fig, axes = plt.subplots(num_rows, num_cols, figsize=figsize)
     axes = axes.flatten()
@@ -99,3 +101,5 @@ def show_images(imgs, num_rows, num_cols, fig_name, titles=None, scale=2):  #@sa
     return axes
 
 # *绘制动画
+
+# *用于记录的相关函数
