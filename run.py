@@ -10,12 +10,12 @@ from torch.utils import data
 from torch.optim.lr_scheduler import StepLR
 
 # 个人文件函数等
-from functions import csv_test, Timer, Accumulator, show_images, get_fashion_mnist_labels
+from functions import csv_test, Timer, Accumulator, show_images, get_fashion_mnist_labels, get_results_dir
 from datasets import get_dataset, get_handler
 from model import get_model
 import arguments
 
-from d2l import torch as d2l
+# from d2l import torch as d2l
 # *关于这个baseline的函数功能：
 # 1. 对于不同数据集开展实验
 # 2. 尝试使用不同的网络模型
@@ -64,7 +64,6 @@ def test(model, device, test_loader):
 def main(args):
 
     # **测试函数部分
-    d2l.load_data_fashion_mnist
     # T = Timer()
     # data_train, labels_train, _, _ = get_dataset('FashionMNIST', './datasets') 
     # X, y = next(iter(data.DataLoader(mnist_train, batch_size=18)))
@@ -74,10 +73,14 @@ def main(args):
     # *参数人为赋值
     args.model_name = 'VGG16'
     # 正式的训练过程
-    T = Timer()
     # * 参数处理部分
+    T = Timer()
+    args.timer = T
+    # 处理存储文件夹，out_path代表结果输出位置
+    get_results_dir(args)
     DATA_NAME = args.dataset
     MODEL_NAME = args.model_name
+
     # ~todo 不同数据可能要额外计算\
     # -计算一个transform的列表
     transforms_list = {

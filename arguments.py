@@ -2,7 +2,7 @@ import argparse
 import os
 
 def get_args():
-    parser = argparse.ArgumentParser(description='PyTorch DAL Framework')
+    parser = argparse.ArgumentParser(description='PyTorch DataBaseline Framework')
     parser.add_argument('--no-cuda', action='store_true', 
                         help='If training is to be done on a GPU')
     # *数据集相关参数
@@ -25,7 +25,7 @@ def get_args():
                         help='Learning rate step gamma (default: 0.7)') 
     parser.add_argument('--dry-run', action='store_true', default=False,
                         help='Quickly check a single pass')       
-    # *日志、模型存储相关参数
+    # *日志、模型、结果等存储相关参数
     parser.add_argument('--logs-path', type=str, default='./logs',
                         help='Path to save logs')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
@@ -47,4 +47,5 @@ def get_args():
         os.mkdir(args.data_path)
     if not os.path.exists(args.logs_path):
         os.mkdir(args.logs_path)
+    
     return args

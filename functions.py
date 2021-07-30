@@ -2,6 +2,7 @@
 # * 各种函数
 import csv
 import time
+import os
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -103,3 +104,16 @@ def show_images(imgs, num_rows, num_cols, fig_name, titles=None, scale=2):  #@sa
 # *绘制动画
 
 # *用于记录的相关函数
+
+# *路径相关函数
+
+# 修改 out-path，这是用来存储最终的log、csv以及对应的图片的
+def get_results_dir(args):
+    # args.
+    time_start = time.localtime()
+    path_results_tmp = '{}-{}-{}'.format(args.model_name, args.dataset, time.strftime(".%Y-%m-%d-%H:%M:%S", time_start))
+    path_results_fin = os.path.join(args.out_path, path_results_tmp)
+    if not os.path.exists(path_results_fin):
+        os.makedirs(path_results_fin)
+    args.out_path = path_results_fin
+    return
