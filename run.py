@@ -63,17 +63,18 @@ def test(model, device, test_loader):
 
 def main(args):
 
-    # **测试函数部分
+    #~ 测试函数部分
     # T = Timer()
     # data_train, labels_train, _, _ = get_dataset('FashionMNIST', './datasets') 
     # X, y = next(iter(data.DataLoader(mnist_train, batch_size=18)))
     # show_images(X.reshape(18, 28, 28), 2, 9, titles=get_fashion_mnist_labels(y));
     # total_time = T.stop()
-    # ** 测试结束
-    # *参数人为赋值
+    #~- 测试结束
+    # -参数人为赋值
     args.model_name = 'VGG16'
     # 正式的训练过程
     # * 参数处理部分
+    # Timer类，计时用
     T = Timer()
     args.timer = T
     # 处理存储文件夹，out_path代表结果输出位置

@@ -1,6 +1,7 @@
 
 # * 各种函数
 import csv
+from logging import handlers
 import time
 import os
 import numpy as np
@@ -21,6 +22,35 @@ def csv_test():
     csv_writer.writerow([1,30,0.85])
 
     f.close()
+
+# *csv类，记录各种数据
+# 文件名：数据
+# init:参数args，文件名
+# write_title：表头列表
+# write_data： 一行内容
+# close：关闭
+class csv_results:
+    def __init__(self, args, str_file='result.csv'):
+        csv_path = os.path.join(args.out_path, str_file)
+        csv_handler = open(csv_path, 'w', encoding = 'utf-8')
+        csv_writer = csv.writer(csv_handler)
+        self.csv_path = csv_path
+        self.csv_handler = csv_handler
+        self.csv_wirter = csv_writer
+    
+    # 构建表头
+    def write_title(self, titles):
+        self.csv_wirter.writerow(titles)
+        self.count_cols = len(titles)
+
+    # 添加一行内容
+    def write_data(self, data):
+        if len(data) == self.count_cols:
+            self.csv_wirter.writerow(data)
+    
+    # 关闭表格
+    def close(self):
+        self.csv_handler.close()
 
 # *一个时间类，作为一个计时器，可以在每次需要计时的时候记录当前用时，也可以返回累计时间、时间总和、平均时间等
 class Timer:  #@save
