@@ -17,9 +17,8 @@ class Logger(object):
         'crit':logging.CRITICAL
     }#日志级别关系映射
  
-    def __init__(self,args,level='info',when='D',backCount=3,fmt='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s'):
-        self.args = args
-        self.get_filename()
+    def __init__(self,args, level='info', when='D',backCount=3,fmt='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s'):
+        self.get_filename(args)
         self.logger = logging.getLogger(self.filename)
         format_str = logging.Formatter(fmt)#设置日志格式
         self.logger.setLevel(self.level_relations.get(level))#设置日志级别
@@ -38,13 +37,13 @@ class Logger(object):
         self.logger.addHandler(sh) #把对象加到logger里
         self.logger.addHandler(th)
     
-    def get_filename(self):
-        logs_path = self.args.logs_path
+    def get_filename(self, args):
+        logs_path = args.logs_path
         # 初始化时要确保路径存在，不存在则创建
         if not os.exists(logs_path):
             os.makedirs(logs_path)
         # 设置日志相关参数
-        name_log_file = os.path.join(logs_path,self.args.log_name)
+        name_log_file = os.path.join(logs_path,args.log_name)
         # 日志名称精确到时分秒
         name_log_file_date = name_log_file + time.strftime(".%Y-%m-%d-%H:%M:%S", time.localtime())
         self.filename = name_log_file_date

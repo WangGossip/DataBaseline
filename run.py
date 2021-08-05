@@ -10,9 +10,10 @@ from torch.utils import data
 from torch.optim.lr_scheduler import StepLR
 
 # 个人文件函数等
-from functions import csv_test, Timer, Accumulator, show_images, get_fashion_mnist_labels, get_results_dir
+from functions import csv_test, Timer, Accumulator, show_images, get_fashion_mnist_labels, get_results_dir, csv_results
 from datasets import get_dataset, get_handler
 from model import get_model
+from log import Logger
 import arguments
 
 # from d2l import torch as d2l
@@ -74,11 +75,19 @@ def main(args):
     args.model_name = 'VGG16'
     # 正式的训练过程
     # * 参数处理部分
-    # Timer类，计时用
+    # args内添加Timer类，计时用
     T = Timer()
     args.timer = T
-    # 处理存储文件夹，out_path代表结果输出位置
+    # 处理存储文件夹，args.out_path代表结果输出位置
     get_results_dir(args)
+
+    # args内添加csv类
+    csv_record_train = csv_results(args, 'train_result.csv')
+    args.csv_record_train = csv_record_train
+    # logger类
+    log_run = Logger(args, level='info')
+    args.log_run = log_run
+    # 部分会常用的变量
     DATA_NAME = args.dataset
     MODEL_NAME = args.model_name
 
@@ -163,6 +172,9 @@ def main(args):
         scheduler.step()
     tmp_t = T.stop()
     print('Total Data time is {} s'.format(tmp_t))
+
+    # 运行结束，各种关闭函数
+    csv_record_train.close()
 if __name__ == '__main__' :
     args = arguments.get_args()
     main(args)
