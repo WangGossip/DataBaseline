@@ -80,6 +80,14 @@ class Timer:  #@save
         """返回累计时间。"""
         return np.array(self.times).cumsum().tolist()
 
+def get_hms_time(sec):
+    s_hour = 3600
+    s_min = 60
+    h = int(sec/s_hour)
+    m = int((sec%s_hour)/s_min)
+    s = int((sec%s_min)/s_min)
+    return h, m, s
+    
 
 # *累加器,每次根据新的数值把当前的数值进行累加(主要用于累计正确率等数据)
 class Accumulator:  #@save

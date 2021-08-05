@@ -15,7 +15,7 @@ def get_args():
                         help='Model used for training (default:Net1)')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N', 
                         help='Batch size used for training (defaule:64)')
-    parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N', 
+    parser.add_argument('--test-batch-size', type=int, default=256, metavar='N', 
                         help='Batch size used for training (defaule:1000)')
     parser.add_argument('--epochs', type=int, default=20, metavar='N',
                         help='Number of epochs for training (default: 20)')
@@ -32,6 +32,8 @@ def get_args():
                         help='how many batches to wait before logging training status')
     parser.add_argument('--log-name', type=str, default='run_record.log', 
                         help='Final performance of the models will be saved with this name')
+    parser.add_argument('--log-level', type=str, default='debug', 
+                        help='Level for writing log')
     parser.add_argument('--save-model', action='store_true', default=False,
                         help='For saving the current Model')
     parser.add_argument('--save-results', action='store_false', default=True, 

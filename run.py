@@ -1,3 +1,4 @@
+from logging.handlers import HTTPHandler
 import numpy as np
 import time
 import torch
@@ -10,7 +11,7 @@ from torch.utils import data
 from torch.optim.lr_scheduler import StepLR
 
 # 个人文件函数等
-from functions import csv_test, Timer, Accumulator, show_images, get_fashion_mnist_labels, get_results_dir, csv_results
+from functions import csv_test, Timer, Accumulator, show_images, get_fashion_mnist_labels, get_results_dir, csv_results, get_hms_time
 from datasets import get_dataset, get_handler
 from model import get_model
 from log import Logger
@@ -24,7 +25,12 @@ import arguments
 # 4. 运行结果保存为基线，画图形式即可
 
 #* 单个迭代过程训练函数
-def train_epoch(args, model, device, train_loader, optimizer, epoch, Timer):
+def train_epoch(args, model, device, train_loader, optimizer, epoch):
+    # 部分参数处理
+    T = args.timer
+    log_run = args.log_run
+    csv_record_trloss = args.csv_record_trloss
+
     model.train()
     for batch_idx, (data, target, idxs) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
@@ -35,15 +41,23 @@ def train_epoch(args, model, device, train_loader, optimizer, epoch, Timer):
         optimizer.step()
         # - 记录结果到csv中，并输出到日志（控制台即可）
         if batch_idx % args.log_interval == 0:
-            tmp_time = Timer.stop()
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}, time is {}s'.format(
+            tmp_time = T.stop()
+            log_run.logger.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}, time is {}s'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), loss.item(), tmp_time))
-            # -存储到csv中
+            csv_record_trloss.write_data([epoch, batch_idx, loss])
+            T.start()
+
             if args.dry_run:
                 break
+
 # *测试函数
-def test(model, device, test_loader):
+def test(args, model, device, test_loader, epoch):
+    # 部分参数处理
+    T = args.timer
+    log_run = args.log_run
+    csv_record_tracc = args.csv_record_tracc
+
     model.eval()
     test_loss = 0
     correct = 0
@@ -57,21 +71,22 @@ def test(model, device, test_loader):
 
     test_loss /= len(test_loader.dataset)
 
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+    tmp_time = T.stop()
+    log_run.logger.info('Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%), time is {}'.format(
         test_loss, correct, len(test_loader.dataset),
-        100. * correct / len(test_loader.dataset)))
-
+        100. * correct / len(test_loader.dataset), tmp_time))
+    csv_record_tracc.write_data([epoch, test_loss, correct])
+    T.start()
 
 def main(args):
-
-    #~ 测试函数部分
+    #test 测试函数部分
     # T = Timer()
     # data_train, labels_train, _, _ = get_dataset('FashionMNIST', './datasets') 
     # X, y = next(iter(data.DataLoader(mnist_train, batch_size=18)))
     # show_images(X.reshape(18, 28, 28), 2, 9, titles=get_fashion_mnist_labels(y));
     # total_time = T.stop()
-    #~- 测试结束
-    # -参数人为赋值
+    #test 测试结束
+    # 参数人为赋值
     args.model_name = 'VGG16'
     # 正式的训练过程
     # * 参数处理部分
@@ -80,18 +95,22 @@ def main(args):
     args.timer = T
     # 处理存储文件夹，args.out_path代表结果输出位置
     get_results_dir(args)
-
     # args内添加csv类
-    csv_record_train = csv_results(args, 'train_result.csv')
-    args.csv_record_train = csv_record_train
+    csv_record_trloss = csv_results(args, 'train_loss.csv')
+    csv_record_tracc = csv_results(args, 'train_acc.csv')
+    args.csv_record_trloss = csv_record_trloss
+    args.csv_record_tracc = csv_record_tracc
     # logger类
-    log_run = Logger(args, level='info')
+    log_run = Logger(args, level=args.log_level)
     args.log_run = log_run
     # 部分会常用的变量
     DATA_NAME = args.dataset
     MODEL_NAME = args.model_name
 
-    # ~todo 不同数据可能要额外计算\
+    tmp_t = T.stop()
+    log_run.logger.debug('程序开始，部分基础参数处理完成，用时{} s'.format(tmp_t))
+    T.start()
+
     # -计算一个transform的列表
     transforms_list = {
         'MNIST':
@@ -119,7 +138,7 @@ def main(args):
     }
     """
     tmp_transform_list = transforms_list[DATA_NAME]
-    # *VGG网络需要resize为224
+    #- VGG网络需要resize为224
     if MODEL_NAME[:3] == 'VGG':
         tmp_transform_list.append(transforms.Resize(224))
     # 是否使用GPU
@@ -139,10 +158,12 @@ def main(args):
                        }
         train_kwargs.update(cuda_kwargs)
         test_kwargs.update(cuda_kwargs)
-    
+
     tmp_t = T.stop()
-    print('Deal args time is {} s'.format(tmp_t))
-    # 读取数据
+    log_run.logger.debug('处理transfom、cuda等参数，用时 {} s'.format(tmp_t))
+    T.start()
+
+    # *读取数据
     X_tr, Y_tr, X_te, Y_te = get_dataset(DATA_NAME, args.data_path)
     handler = get_handler(DATA_NAME)
 
@@ -150,15 +171,18 @@ def main(args):
     train_loader = DataLoader(handler(X_tr, Y_tr, transform=transform), **train_kwargs)
     test_loader = DataLoader(handler(X_te, Y_te, transform=transform), **test_kwargs)
 
-    # ~todo 验证：是否使用resize的影响
-    # 开始测试
+    # test开始测试
     # X, y, _ = next(iter(train_loader))
     # show_images(X.reshape(64, 224, 224), 8, 8, 'VGG_show.png',titles=get_fashion_mnist_labels(y));
     # return
-    # 测试结束
-    tmp_t = T.stop()
-    print('Read Data time is {} s'.format(tmp_t))
+    # test测试结束
+    # ~是否使用resize没有影响
 
+    tmp_t = T.stop()
+    log_run.logger.debug('读取数据用时 {} s'.format(tmp_t))
+    T.start()
+
+    time_start_train = time.time()
     # *模型训练部分
     # 加载、选择模型，设置优化器、处理相关参数
     net = get_model(MODEL_NAME).to(device)
@@ -166,15 +190,23 @@ def main(args):
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     n_epoch = args.epochs
 
+    csv_record_trloss.write_title(['epoch', 'batch', 'loss'])
+    csv_record_tracc.write_title(['epoch', 'loss', 'acc'])
+    
     for epoch in range(1, n_epoch+1):
-        train_epoch(args, net, device, train_loader, optimizer, n_epoch, T)
-        test(net, device, test_loader)
+        train_epoch(args, net, device, train_loader, optimizer, epoch)
+        test(args, net, device, test_loader, epoch)
         scheduler.step()
-    tmp_t = T.stop()
-    print('Total Data time is {} s'.format(tmp_t))
+    
+    time_train = time.time() - time_start_train
+    h_tmp, m_tmp, s_tmp = get_hms_time(time_train)
+    log_run.logger.info('训练用时：{}h {}min {}s'.format(h_tmp, m_tmp, s_tmp))
 
+    # 画图
+    # test 暂时不用了吧 看csv也是一样的
     # 运行结束，各种关闭函数
-    csv_record_train.close()
+    csv_record_trloss.close()
+    csv_record_tracc.close()
 if __name__ == '__main__' :
     args = arguments.get_args()
     main(args)
