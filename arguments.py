@@ -11,7 +11,7 @@ def get_args():
     parser.add_argument('--data-path', type=str, default='./datasets', 
                         help='Path to where the data is')                      
     # *训练&测试相关参数 
-    parser.add_argument('--model-name', type=str, default='Net1', 
+    parser.add_argument('--model-name', type=str, default='VGG16', 
                         help='Model used for training (default:Net1)')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N', 
                         help='Batch size used for training (defaule:64)')

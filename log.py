@@ -40,7 +40,7 @@ class Logger(object):
     def get_filename(self, args):
         logs_path = args.logs_path
         # 初始化时要确保路径存在，不存在则创建
-        if not os.exists(logs_path):
+        if not os.path.exists(logs_path):
             os.makedirs(logs_path)
         # 设置日志相关参数
         name_log_file = os.path.join(logs_path,args.log_name)
