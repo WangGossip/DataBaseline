@@ -42,9 +42,9 @@ class Logger(object):
         # 初始化时要确保路径存在，不存在则创建
         if not os.path.exists(logs_path):
             os.makedirs(logs_path)
-        # 设置日志相关参数
-        name_log_file = os.path.join(logs_path,args.log_name)
-        # 日志名称精确到时分秒
-        name_log_file_date = name_log_file + time.strftime(".%Y-%m-%d-%H:%M:%S", time.localtime())
-        self.filename = name_log_file_date
+        # 日志文件名称,精确到时分秒
+        name_log_file_date = args.log_name + time.strftime(".%Y-%m-%d-%H:%M:%S", time.localtime()) + '.log'
+        name_log_file_path = os.path.join(logs_path,name_log_file_date)
+        
+        self.filename = name_log_file_path
         return

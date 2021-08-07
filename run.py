@@ -42,10 +42,10 @@ def train_epoch(args, model, device, train_loader, optimizer, epoch):
         # - 记录结果到csv中，并输出到日志（控制台即可）
         if batch_idx % args.log_interval == 0:
             tmp_time = T.stop()
-            log_run.logger.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}, time is {}s'.format(
+            log_run.logger.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}, time is {:.4f} s'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), loss.item(), tmp_time))
-            csv_record_trloss.write_data([epoch, batch_idx, loss])
+            csv_record_trloss.write_data([epoch, batch_idx, loss.item()])
             T.start()
 
             if args.dry_run:
@@ -58,6 +58,7 @@ def test(args, model, device, test_loader, epoch):
     log_run = args.log_run
     csv_record_tracc = args.csv_record_tracc
 
+    len_testdata = len(test_loader.dataset)
     model.eval()
     test_loss = 0
     correct = 0
@@ -69,13 +70,14 @@ def test(args, model, device, test_loader, epoch):
             pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
             correct += pred.eq(target.view_as(pred)).sum().item()
 
-    test_loss /= len(test_loader.dataset)
+    test_loss /= len_testdata
+    acc = correct / len_testdata
 
     tmp_time = T.stop()
-    log_run.logger.info('Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%), time is {}'.format(
-        test_loss, correct, len(test_loader.dataset),
-        100. * correct / len(test_loader.dataset), tmp_time))
-    csv_record_tracc.write_data([epoch, test_loss, correct])
+    log_run.logger.info('Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%), time is {:.4f} s'.format(
+        test_loss, correct, len_testdata,
+        100. * correct / len_testdata, tmp_time))
+    csv_record_tracc.write_data([epoch, test_loss, acc])
     T.start()
 
 def main(args):
@@ -108,8 +110,13 @@ def main(args):
     MODEL_NAME = args.model_name
 
     tmp_t = T.stop()
-    log_run.logger.debug('程序开始，部分基础参数处理完成，用时{} s'.format(tmp_t))
+    log_run.logger.debug('程序开始，部分基础参数处理完成，用时 {:.4f} s'.format(tmp_t))
     T.start()
+
+    # test bug:2个results
+    # csv_record_trloss.close()
+    # csv_record_tracc.close()
+    # return
 
     # -计算一个transform的列表
     transforms_list = {
@@ -146,7 +153,7 @@ def main(args):
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # *加载数据集，设置dataloader等
-    # 数据集相关参数
+    # 数据集相关参数，包括transform以及batchsize等合并参数
     transform = transforms.Compose(tmp_transform_list)
     
     train_kwargs = {'batch_size': args.batch_size}
@@ -160,7 +167,7 @@ def main(args):
         test_kwargs.update(cuda_kwargs)
 
     tmp_t = T.stop()
-    log_run.logger.debug('处理transfom、cuda等参数，用时 {} s'.format(tmp_t))
+    log_run.logger.debug('处理transfom、cuda等参数，用时 {:.4f} s'.format(tmp_t))
     T.start()
 
     # *读取数据
@@ -179,7 +186,7 @@ def main(args):
     # ~是否使用resize没有影响
 
     tmp_t = T.stop()
-    log_run.logger.debug('读取数据用时 {} s'.format(tmp_t))
+    log_run.logger.debug('读取数据用时 {:.4f} s'.format(tmp_t))
     T.start()
 
     time_start_train = time.time()
@@ -200,7 +207,7 @@ def main(args):
     
     time_train = time.time() - time_start_train
     h_tmp, m_tmp, s_tmp = get_hms_time(time_train)
-    log_run.logger.info('训练用时：{}h {}min {}s'.format(h_tmp, m_tmp, s_tmp))
+    log_run.logger.info('训练用时：{} h {} min {} s'.format(h_tmp, m_tmp, s_tmp))
 
     # 画图
     # test 暂时不用了吧 看csv也是一样的

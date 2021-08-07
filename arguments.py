@@ -30,7 +30,7 @@ def get_args():
                         help='Path to save logs')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                         help='how many batches to wait before logging training status')
-    parser.add_argument('--log-name', type=str, default='run_record.log', 
+    parser.add_argument('--log-name', type=str, default='run_record', 
                         help='Final performance of the models will be saved with this name')
     parser.add_argument('--log-level', type=str, default='debug', 
                         help='Level for writing log')

@@ -85,7 +85,7 @@ def get_hms_time(sec):
     s_min = 60
     h = int(sec/s_hour)
     m = int((sec%s_hour)/s_min)
-    s = int((sec%s_min)/s_min)
+    s = int(sec%s_min)
     return h, m, s
     
 
@@ -103,8 +103,6 @@ class Accumulator:  #@save
 
     def __getitem__(self, idx):
         return self.data[idx]
-
-# *画图相关函数
 
 # *获取FashionMNIST 标签
 # 根据y值获取标签
@@ -139,7 +137,24 @@ def show_images(imgs, num_rows, num_cols, fig_name, titles=None, scale=2):  #@sa
     fig.savefig(fig_name)
     return axes
 
-# *绘制动画
+# *绘制图像相关函数
+# 画loss（训练）的图
+# 需要包括：loss变化趋势（纵坐标），横坐标是epoch变化（需要一个虚线），实际横坐标是epoch.iter
+def draw_trloss(csv_path):
+    # 获取数据
+    f = open(csv_path, 'r')
+    csv_reader = csv.reader(f)
+    headline = next(csv_reader)
+    count_data = 0
+    iter_idxs = []
+    loss = []
+    for row in csv_reader:
+        count_data += 1
+        iter_idxs.append(row[1])
+        loss.append(row[2])
+
+
+    # 画图
 
 # *用于记录的相关函数
 
