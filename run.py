@@ -11,7 +11,7 @@ from torch.utils import data
 from torch.optim.lr_scheduler import StepLR
 
 # 个人文件函数等
-from functions import csv_test, Timer, Accumulator, show_images, get_fashion_mnist_labels, get_results_dir, csv_results, get_hms_time
+from functions import csv_test, Timer, Accumulator, show_images, get_fashion_mnist_labels, get_results_dir, csv_results, get_hms_time, draw_trloss, draw_tracc
 from datasets import get_dataset, get_handler
 from model import get_model
 from log import Logger
@@ -80,6 +80,10 @@ def test(args, model, device, test_loader, epoch):
     csv_record_tracc.write_data([epoch, test_loss, acc])
     T.start()
 
+def test_draw(args):
+    str_path = './results/VGG16-FashionMNIST-.2021-08-07-22:46:54/train_loss.csv'
+    draw_trloss(args, str_path)
+
 def main(args):
     #test 测试函数部分
     # T = Timer()
@@ -89,7 +93,7 @@ def main(args):
     # total_time = T.stop()
     #test 测试结束
     # 参数人为赋值
-    args.model_name = 'VGG16'
+    # args.model_name = 'VGG16'
     # 正式的训练过程
     # * 参数处理部分
     # args内添加Timer类，计时用
@@ -111,6 +115,8 @@ def main(args):
 
     tmp_t = T.stop()
     log_run.logger.debug('程序开始，部分基础参数处理完成，用时 {:.4f} s'.format(tmp_t))
+    log_run.logger.debug('使用数据集为：{}， 网络模型为：{}， epoch为：{}， batchsize为：{}'.
+                        format(DATA_NAME, MODEL_NAME, args.epochs, args.batch_size))
     T.start()
 
     # test bug:2个results
@@ -209,11 +215,19 @@ def main(args):
     h_tmp, m_tmp, s_tmp = get_hms_time(time_train)
     log_run.logger.info('训练用时：{} h {} min {} s'.format(h_tmp, m_tmp, s_tmp))
 
-    # 画图
     # test 暂时不用了吧 看csv也是一样的
     # 运行结束，各种关闭函数
     csv_record_trloss.close()
     csv_record_tracc.close()
+    # 画图
+    T.start()
+    draw_trloss(args)
+    draw_tracc(args)
+    tmp_t=T.stop()
+    log_run.logger.info('画图用时：{:.4f} s'.format(tmp_t))
+    log_run.logger.info('程序结束，\n运行log存储路径为：{}\n实验结果存储路径为：{}'.format(args.log_run.filename,args.out_path))
+
 if __name__ == '__main__' :
     args = arguments.get_args()
+    # test_draw(args)
     main(args)

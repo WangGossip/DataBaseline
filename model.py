@@ -8,7 +8,7 @@ from torchsummary import summary
 
 def get_model(model_name):
     if model_name == 'Net1':
-        return Net1
+        return Net1()
     elif model_name == 'VGG16':
         return VGG([2,2,3,3,3], num_classes=10)
 

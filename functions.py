@@ -139,8 +139,17 @@ def show_images(imgs, num_rows, num_cols, fig_name, titles=None, scale=2):  #@sa
 
 # *绘制图像相关函数
 # 画loss（训练）的图
-# 需要包括：loss变化趋势（纵坐标），横坐标是epoch变化（需要一个虚线），实际横坐标是epoch.iter
-def draw_trloss(csv_path):
+# ~实际用到的参数：全部loss数值；epochs的数量（args）；采样频率
+# 需要包括：loss变化趋势（纵坐标），横坐标是epoch变化（需要一个虚线），实际横坐标是epoch.iter, 
+# args中应包含保存的路径
+# csv格式：[epoch，iter，loss]
+def draw_trloss(args, sample_times=5, fig_name='tr_loss.png'):
+    # 其他参数
+    n_epoch = args.epochs
+    save_path = os.path.join(args.out_path, fig_name)
+    csv_path = args.csv_record_trloss.csv_path
+    # test
+    # 手动赋值：save_path、csv_path
     # 获取数据
     f = open(csv_path, 'r')
     csv_reader = csv.reader(f)
@@ -148,13 +157,68 @@ def draw_trloss(csv_path):
     count_data = 0
     iter_idxs = []
     loss = []
+    #~ 读取的str格式，应转换为对应的int或float
     for row in csv_reader:
-        count_data += 1
-        iter_idxs.append(row[1])
-        loss.append(row[2])
+        count_data += 1             #计数，有多少行 
+        iter_idxs.append(int(row[1]))
+        loss.append(float(row[2]))
+    f.close()
+    # -设置横坐标，尺度为1
+    # 设置采样相关参数，即每一个迭代epoch中采样几次
+    # sample_times = 10
+    # epoch，虚线分界；以及采样后的数据
+    print('count_data is {}'.format(count_data))
+    space_epoch = int(count_data/n_epoch)
+    space_sample = int(space_epoch/sample_times)
+    print('space_epoch is {}, space_sample is {}'.format(space_epoch, space_sample))
+    epoch_lines = []
+    sample_loss_x = []
+    sample_loss_y = []
+    for i in range(1, n_epoch+1):
+        epoch_lines.append(i*space_epoch)
+    for i in range(sample_times*n_epoch):
+        tmp_x = i*space_sample
+        sample_loss_x.append(tmp_x)
+        sample_loss_y.append(loss[tmp_x])
+    # 开始画图
+    plt.figure()
+    plt.plot(sample_loss_x, sample_loss_y)
+    plt.title("LossResult")
+    plt.xlabel("train")
+    plt.ylabel("loss")
 
+    plt.savefig(save_path)
 
-    # 画图
+def draw_tracc(args, fig_name='tr_acc.png'):
+    # 参数处理
+    n_epoch = args.epochs
+    save_path = os.path.join(args.out_path, fig_name)
+    csv_path = args.csv_record_tracc.csv_path
+    # 读取数据
+    f = open(csv_path, 'r')
+    csv_reader = csv.reader(f)
+    headline = next(csv_reader)
+    count_epoch = []
+    te_acc = []
+    te_loss = []
+    for row in csv_reader:
+        count_epoch.append(int(row[0]))
+        te_loss.append(float(row[1]))
+        te_acc.append(float(row[2]))
+    f.close()
+    # 画图部分
+    fig = plt.figure()
+    ax_loss = fig.add_subplot(111)
+    ax_loss.plot(count_epoch, te_loss, 'r', label='test_loss')
+    ax_loss.legend(loc=1)
+    ax_loss.set_ylabel('Loss for each epoch')
+    ax_acc = ax_loss.twinx() #~重点利用这个函数
+    ax_acc.plot(count_epoch, te_acc, 'g', label='test_acc')
+    ax_acc.legend(loc=2)
+    ax_acc.set_ylabel('Acc for after epoch')
+    ax_acc.set_xlabel('Epoch')
+    plt.title("Loss&ACC Result")
+    plt.savefig(save_path)
 
 # *用于记录的相关函数
 
