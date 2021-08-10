@@ -4,6 +4,7 @@ import csv
 from logging import handlers
 import time
 import os
+from matplotlib import lines
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -171,24 +172,30 @@ def draw_trloss(args, sample_times=5, fig_name='tr_loss.png'):
     space_epoch = int(count_data/n_epoch)
     space_sample = int(space_epoch/sample_times)
     print('space_epoch is {}, space_sample is {}'.format(space_epoch, space_sample))
-    epoch_lines = []
+    # epoch_lines = []
     sample_loss_x = []
     sample_loss_y = []
-    for i in range(1, n_epoch+1):
-        epoch_lines.append(i*space_epoch)
+
     for i in range(sample_times*n_epoch):
         tmp_x = i*space_sample
         sample_loss_x.append(tmp_x)
         sample_loss_y.append(loss[tmp_x])
+    max_loss_y = max(sample_loss_y)
+    min_loss_y = min(sample_loss_y)
     # 开始画图
     plt.figure()
     plt.plot(sample_loss_x, sample_loss_y)
+    # 添加虚线绘图
+    for i in range(1, n_epoch):
+        plt.vlines(i*space_epoch, min_loss_y, max_loss_y, colors='g', linestyles='--')
+        # epoch_lines.append(i*space_epoch)    
     plt.title("LossResult")
     plt.xlabel("train")
     plt.ylabel("loss")
 
     plt.savefig(save_path)
 
+# *画acc结果
 def draw_tracc(args, fig_name='tr_acc.png'):
     # 参数处理
     n_epoch = args.epochs
