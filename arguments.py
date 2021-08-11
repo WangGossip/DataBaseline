@@ -13,14 +13,14 @@ def get_args():
     # *训练&测试相关参数 
     parser.add_argument('--model-name', type=str, default='VGG16', 
                         help='Model used for training (default:Net1)')
-    parser.add_argument('--batch-size', type=int, default=64, metavar='N', 
-                        help='Batch size used for training (defaule:64)')
+    parser.add_argument('--batch-size', type=int, default=128, metavar='N', 
+                        help='Batch size used for training (defaule:128)')
     parser.add_argument('--test-batch-size', type=int, default=256, metavar='N', 
                         help='Batch size used for training (defaule:1000)')
     parser.add_argument('--epochs', type=int, default=20, metavar='N',
                         help='Number of epochs for training (default: 20)')
-    parser.add_argument('--lr', type=float, default=1.0, metavar='LR',
-                        help='Learning rate (default: 1.0)')         
+    parser.add_argument('--lr', type=float, default=0.1, metavar='LR',
+                        help='Learning rate (default: 0.1)')         
     parser.add_argument('--gamma', type=float, default=0.7, metavar='M',
                         help='Learning rate step gamma (default: 0.7)') 
     parser.add_argument('--dry-run', action='store_true', default=False,
