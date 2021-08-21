@@ -225,6 +225,9 @@ def main(args):
     draw_tracc(args)
     tmp_t=T.stop()
     log_run.logger.info('画图用时：{:.4f} s'.format(tmp_t))
+    log_run.logger.debug('使用数据集为：{}， 网络模型为：{}， epoch为：{}， batchsize为：{}， lr为：{}'.
+                        format(DATA_NAME, MODEL_NAME, args.epochs, args.batch_size, args.lr))
+
     log_run.logger.info('程序结束，\n运行log存储路径为：{}\n实验结果存储路径为：{}'.format(args.log_run.filename,args.out_path))
 
 if __name__ == '__main__' :
