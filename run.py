@@ -2,13 +2,16 @@ from logging.handlers import HTTPHandler
 import numpy as np
 import time
 import torch
+import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
+import torch.backends.cudnn as cudnn
 
 from torch.utils.data.dataloader import DataLoader
 from torchvision import datasets, transforms
 from torch.utils import data
 from torch.optim.lr_scheduler import StepLR
+from utils import progress_bar
 
 # 个人文件函数等
 from functions import csv_test, Timer, Accumulator, show_images, get_fashion_mnist_labels, get_results_dir, csv_results, get_hms_time, draw_trloss, draw_tracc
@@ -30,23 +33,39 @@ def train_epoch(args, model, device, train_loader, optimizer, epoch):
     T = args.timer
     log_run = args.log_run
     csv_record_trloss = args.csv_record_trloss
+    print('\nEpoch: %d' % epoch)
 
     model.train()
+    train_loss = 0
+    correct = 0
+    total = 0
+    criterion = nn.CrossEntropyLoss()
     for batch_idx, (data, target, idxs) in enumerate(train_loader):
+
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output, e1 = model(data)
-        loss = F.cross_entropy(output, target)
+        # loss = F.cross_entropy(output, target)
+        loss = criterion(output, target)
         loss.backward()
         optimizer.step()
+
+        train_loss += loss.item()
+        _, predicted = output.max(1)
+        total += target.size(0)
+        correct += predicted.eq(target).sum().item()
+
+        progress_bar(batch_idx, len(train_loader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+                    % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+
         # - 记录结果到csv中，并输出到日志（控制台即可）
         if batch_idx % args.log_interval == 0:
-            tmp_time = T.stop()
-            log_run.logger.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}, time is {:.4f} s'.format(
-                epoch, batch_idx * len(data), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), loss.item(), tmp_time))
+            # tmp_time = T.stop()
+            # log_run.logger.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}, time is {:.4f} s'.format(
+            #     epoch, batch_idx * len(data), len(train_loader.dataset),
+            #     100. * batch_idx / len(train_loader), loss.item(), tmp_time))
             csv_record_trloss.write_data([epoch, batch_idx, loss.item()])
-            T.start()
+            # T.start()
 
             if args.dry_run:
                 break
@@ -74,7 +93,7 @@ def test(args, model, device, test_loader, epoch):
     acc = correct / len_testdata
 
     tmp_time = T.stop()
-    log_run.logger.info('Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%), time is {:.4f} s'.format(
+    log_run.logger.info('Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%), time is {:.4f} s'.format(
         test_loss, correct, len_testdata,
         100. * correct / len_testdata, tmp_time))
     csv_record_tracc.write_data([epoch, test_loss, acc])
@@ -125,7 +144,20 @@ def main(args):
     # return
 
     # -计算一个transform的列表
-    transforms_list = {
+    transforms_test_list = {
+        'MNIST':
+            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))],
+        'FashionMNIST':
+            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))],
+        'SVHN':
+            [transforms.ToTensor(), transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))],
+        # 'CIFAR10':
+        #     [transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))]
+        'CIFAR10':
+            [transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))]
+
+    }
+    transform_train_list = {
         'MNIST':
             [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))],
         'FashionMNIST':
@@ -133,7 +165,8 @@ def main(args):
         'SVHN':
             [transforms.ToTensor(), transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))],
         'CIFAR10':
-            [transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))]
+            [transforms.ToTensor(), transforms.RandomCrop(32, padding=4), transforms.RandomHorizontalFlip(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))]
+
     }
     """
     transform_pool = {'MNIST':
@@ -150,18 +183,25 @@ def main(args):
                             transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))])}                                                        
     }
     """
-    tmp_transform_list = transforms_list[DATA_NAME]
+    tmp_transform_train_list = transform_train_list[DATA_NAME]
+    tmp_transform_test_list = transforms_test_list[DATA_NAME]
+
     #- VGG网络需要resize为224
     if MODEL_NAME[:3] == 'VGG':
-        tmp_transform_list.append(transforms.Resize(224))
+        tmp_transform_train_list.append(transforms.Resize(224))
+        tmp_transform_test_list.append(transforms.Resize(224))
     # 是否使用GPU
     use_cuda = not args.no_cuda and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # *加载数据集，设置dataloader等
     # 数据集相关参数，包括transform以及batchsize等合并参数
-    transform = transforms.Compose(tmp_transform_list)
-    
+    test_transform = transforms.Compose(tmp_transform_test_list)
+    # train_transform_list=tmp_transform_list
+    # train_transform_list.append(transforms.RandomCrop(32, padding=4))
+    # train_transform_list.append(transforms.RandomHorizontalFlip())
+    train_transform=transforms.Compose(tmp_transform_train_list)
+
     train_kwargs = {'batch_size': args.batch_size}
     test_kwargs = {'batch_size': args.test_batch_size}
     if use_cuda:
@@ -181,8 +221,8 @@ def main(args):
     handler = get_handler(DATA_NAME)
 
     # -可能有额外的数据处理部分（初始数据集）
-    train_loader = DataLoader(handler(X_tr, Y_tr, transform=transform), **train_kwargs)
-    test_loader = DataLoader(handler(X_te, Y_te, transform=transform), **test_kwargs)
+    train_loader = DataLoader(handler(X_tr, Y_tr, transform=train_transform), **train_kwargs)
+    test_loader = DataLoader(handler(X_te, Y_te, transform=test_transform), **test_kwargs)
 
     # test开始测试
     # X, y, _ = next(iter(train_loader))
@@ -199,9 +239,31 @@ def main(args):
     # *模型训练部分
     # 加载、选择模型，设置优化器、处理相关参数
     net = get_model(MODEL_NAME).to(device)
-    optimizer = optim.Adadelta(net.parameters(), lr=args.lr)
-    scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
+    cudnn.benchmark = True
+
     n_epoch = args.epochs
+    # *优化器
+    if args.opt == 'sgd':
+        optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=5e-4)
+    elif args.opt == 'adam':
+        optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9,0.999), eps=1e-8, weight_decay=5e-4)
+    elif args.opt == 'adad':
+        optimizer = optim.Adadelta(net.parameters(), lr=args.lr)
+    # 调度
+    if args.sch == 'step':
+        scheduler = StepLR(optimizer, step_size=args.step_size, gamma=args.gamma)
+    elif args.sch == 'cos':
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+    elif args.sch == 'exp':
+        scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=args.gamma)
+
+    # optimizer = optim.Adam(net.parameters(), lr=args.lr)
+    # scheduler = StepLR(optimizer, step_size=args.step_size, gamma=args.gamma)
+    # optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.3)
+    # optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=5e-4)
+    # scheduler = StepLR(optimizer, step_size=args.step_size, gamma=args.gamma)
+    # scheduler = optim.lr_scheduler.CyclicLR(optimizer,base_lr=1e-6,max_lr=args.lr,step_size_up=5,mode="triangular2")
+    
 
     csv_record_trloss.write_title(['epoch', 'batch', 'loss'])
     csv_record_tracc.write_title(['epoch', 'loss', 'acc'])
@@ -209,7 +271,8 @@ def main(args):
     for epoch in range(1, n_epoch+1):
         train_epoch(args, net, device, train_loader, optimizer, epoch)
         test(args, net, device, test_loader, epoch)
-        scheduler.step()
+        if args.opt != 'adam':
+            scheduler.step()
     
     time_train = time.time() - time_start_train
     h_tmp, m_tmp, s_tmp = get_hms_time(time_train)

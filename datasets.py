@@ -18,13 +18,24 @@ def get_dataset(name, data_path):
     if name == 'MNIST' :
         raw_tr = datasets.MNIST(data_path, train=True, download=False)
         raw_te = datasets.MNIST(data_path, train=False, download=False)
+        X_tr = raw_tr.data
+        Y_tr = raw_tr.targets
+        X_te = raw_te.data
+        Y_te = raw_te.targets
     elif name == 'FashionMNIST':
         raw_tr = datasets.FashionMNIST(data_path, train=True, download=False)
         raw_te = datasets.FashionMNIST(data_path, train=False, download=False)
-    X_tr = raw_tr.data
-    Y_tr = raw_tr.targets
-    X_te = raw_te.data
-    Y_te = raw_te.targets
+        X_tr = raw_tr.data
+        Y_tr = raw_tr.targets
+        X_te = raw_te.data
+        Y_te = raw_te.targets
+    elif name == 'CIFAR10':
+        raw_tr = datasets.CIFAR10(data_path, train=True, download=False)
+        raw_te = datasets.CIFAR10(data_path, train=False, download=False)
+        X_tr = raw_tr.data
+        Y_tr = torch.tensor(raw_tr.targets)
+        X_te = raw_te.data
+        Y_te = torch.tensor(raw_te.targets)
     return X_tr, Y_tr, X_te, Y_te
 
 
