@@ -21,7 +21,9 @@ def get_args():
                         help='Number of epochs for training (default: 20)')
     parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
                         help='Learning rate (default: 0.1)')         
-    parser.add_argument('--gamma', type=float, default=1, metavar='M',
+    parser.add_argument('--no-sch', action='store_true', 
+                        help='If to use a scheduler')
+    parser.add_argument('--gamma', type=float, default=0.7, metavar='M',
                         help='Learning rate step gamma (default: 0.7)') 
     parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
                         help='Learning momentum (default: 0.9)') 
@@ -29,6 +31,8 @@ def get_args():
                         help='Optimizer used for training (default:sgd)')
     parser.add_argument('--sch', type=str, default='cos', metavar='S', 
                         help='Scheduler used for training and optimizer(default:CosineAnnealingLR)')
+    parser.add_argument('--tmax', type=int, default=80, metavar='N',
+                        help='T_max in cos scheduler'    )
     parser.add_argument('--step-size', type=int, default=5, 
                         help='Learning rate step size (default: 5)') 
     parser.add_argument('--dry-run', action='store_true', default=False,

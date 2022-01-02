@@ -8,6 +8,7 @@ from torch.utils import data
 from torchvision import datasets
 from torchvision import transforms
 from torch.utils.data import Dataset
+from torchtoolbox.transform import Cutout
 from PIL import Image
 
 

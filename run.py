@@ -11,6 +11,7 @@ from torch.utils.data.dataloader import DataLoader
 from torchvision import datasets, transforms
 from torch.utils import data
 from torch.optim.lr_scheduler import StepLR
+from torchtoolbox.transform import Cutout
 from utils import progress_bar
 
 # 个人文件函数等
@@ -161,11 +162,21 @@ def main(args):
         'MNIST':
             [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))],
         'FashionMNIST':
-            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))],
+            # [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))],
+            [   transforms.ToTensor(), 
+                # Cutout(0.5),#参数是遮挡的概率
+                # transforms.RandomCrop(28, padding=2), 
+                transforms.RandomErasing(), 
+                transforms.RandomHorizontalFlip(), 
+                transforms.Normalize((0.1307,), (0.3081,))],
         'SVHN':
             [transforms.ToTensor(), transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))],
         'CIFAR10':
-            [transforms.ToTensor(), transforms.RandomCrop(32, padding=4), transforms.RandomHorizontalFlip(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))]
+            [   transforms.ToTensor(), 
+                transforms.RandomCrop(32, padding=4), 
+                transforms.RandomErasing(), 
+                transforms.RandomHorizontalFlip(), 
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))]
 
     }
     """
@@ -221,6 +232,7 @@ def main(args):
     handler = get_handler(DATA_NAME)
 
     # -可能有额外的数据处理部分（初始数据集）
+    # train_loader = DataLoader(handler(X_tr, Y_tr), **train_kwargs)
     train_loader = DataLoader(handler(X_tr, Y_tr, transform=train_transform), **train_kwargs)
     test_loader = DataLoader(handler(X_te, Y_te, transform=test_transform), **test_kwargs)
 
@@ -238,7 +250,11 @@ def main(args):
     time_start_train = time.time()
     # *模型训练部分
     # 加载、选择模型，设置优化器、处理相关参数
-    net = get_model(MODEL_NAME).to(device)
+    net = get_model(MODEL_NAME)
+    if MODEL_NAME == 'ResNet' and DATA_NAME == 'FashionMNIST':
+        net.conv1 = nn.Conv2d(1, 64, kernel_size=3 , stride=1, padding=1, bias=False)
+
+    net = net.to(device)
     cudnn.benchmark = True
 
     n_epoch = args.epochs
@@ -246,14 +262,16 @@ def main(args):
     if args.opt == 'sgd':
         optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=5e-4)
     elif args.opt == 'adam':
-        optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9,0.999), eps=1e-8, weight_decay=5e-4)
+        optimizer = optim.Adam(net.parameters(), lr=args.lr)
+        # optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9,0.999), eps=1e-8, weight_decay=5e-4)
     elif args.opt == 'adad':
         optimizer = optim.Adadelta(net.parameters(), lr=args.lr)
     # 调度
+    use_sch = not args.no_sch
     if args.sch == 'step':
         scheduler = StepLR(optimizer, step_size=args.step_size, gamma=args.gamma)
     elif args.sch == 'cos':
-        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.tmax)
     elif args.sch == 'exp':
         scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=args.gamma)
 
@@ -271,7 +289,7 @@ def main(args):
     for epoch in range(1, n_epoch+1):
         train_epoch(args, net, device, train_loader, optimizer, epoch)
         test(args, net, device, test_loader, epoch)
-        if args.opt != 'adam':
+        if use_sch :
             scheduler.step()
     
     time_train = time.time() - time_start_train
